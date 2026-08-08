@@ -1,0 +1,1 @@
+- [InterviewIQ integration boundary](interview-iq-boundary.md) — Demo auth is intentionally client-side; the interview client preserves the existing POST contract and falls back clearly when no live route is available.

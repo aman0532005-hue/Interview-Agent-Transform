@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "InterviewIQ"
+description = "A premium adaptive technical interview platform for candidates to practice, measure, and improve with candidate-aware interviews and actionable feedback."
+version = "1.0.0"
+id = "artifacts/interview-iq"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23024
+
+[services.development]
+run = "pnpm --filter @workspace/interview-iq run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/interview-iq", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/interview-iq/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23024"
+BASE_PATH = "/"

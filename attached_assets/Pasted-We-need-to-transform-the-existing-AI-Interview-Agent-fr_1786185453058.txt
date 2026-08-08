@@ -1,0 +1,535 @@
+We need to transform the existing AI Interview Agent from a basic demo into a polished, industry-level SaaS product suitable for a competitive college hackathon.
+
+IMPORTANT:
+Do NOT destroy or unnecessarily rewrite the working backend/adaptive interview engine.
+Preserve the existing POST /api/interview contract.
+Do not introduce unnecessary backend routes.
+The current backend logic for candidate-aware adaptive interviewing, curriculum planning, evaluation and feedback is valuable and should remain functional.
+
+First inspect the entire existing repository before modifying anything.
+
+CURRENT STACK:
+- Backend: FastAPI/Python
+- Frontend: React + Vite
+- Existing backend modules include:
+  main.py
+  session.py
+  evaluator.py
+  planner.py
+  curriculum.py
+  interviewer.py
+- Existing frontend uses React/Vite.
+
+GOAL:
+Create a premium, dynamic interview platform rather than a static interview page.
+
+PRODUCT NAME:
+InterviewIQ
+Subtitle:
+"Adaptive technical interviews built around how YOU actually learn."
+
+DESIGN DIRECTION:
+- Modern premium SaaS interface
+- Dark navy/charcoal base
+- Blue/cyan/purple accent gradients
+- Glassmorphism used subtly
+- Clean cards
+- Strong typography hierarchy
+- Smooth hover/entrance transitions
+- Professional, not flashy
+- Responsive desktop/tablet/mobile
+- No generic bootstrap-looking UI
+- No excessive rounded cards everywhere
+- Use Lucide icons if already available, otherwise install/use a lightweight icon library
+- Avoid huge unnecessary dependencies
+
+CREATE THESE FRONTEND SCREENS:
+
+1. LANDING PAGE
+Route/view:
+/
+Sections:
+- Navbar with InterviewIQ logo
+- Features
+- How it works
+- Adaptive interviewing explanation
+- Candidate intelligence section
+- CTA: "Start Your Interview"
+- Secondary CTA: "View Demo"
+- Professional footer
+
+Hero headline:
+"Interviews that adapt to you."
+Subheadline:
+"InterviewIQ analyzes your experience, learning history, and answers to build a technical interview that gets harder when you're strong and digs deeper where you struggle."
+
+Feature cards:
+- Candidate-aware questions
+- Adaptive follow-ups
+- Resume intelligence
+- Real-time evaluation
+- Actionable feedback
+
+2. LOGIN PAGE
+Route/view:
+ /login
+
+Design:
+- Split screen
+- Left side product branding/value proposition
+- Right side login form
+
+Fields:
+- Email
+- Password
+- Remember me
+- Forgot password
+- Login button
+- Continue with Google UI button (demo/local only)
+- Link to Sign Up
+
+For hackathon/demo purposes use localStorage-based demo authentication.
+DO NOT create a fake secure authentication backend.
+Clearly keep this as client-side demo authentication.
+
+3. SIGN UP PAGE
+Route/view:
+ /signup
+
+Fields:
+- Full name
+- Email
+- Password
+- Confirm password
+- Role
+- Experience level
+
+On submit:
+- Validate fields
+- Save demo account to localStorage
+- Save current user
+- Redirect to onboarding/dashboard
+
+4. ONBOARDING / CANDIDATE PROFILE
+Route/view:
+ /onboarding
+
+Create a professional multi-step wizard:
+
+Step 1:
+Personal information
+- Full name
+- Email
+- Phone optional
+- Current role
+- Target role
+- Years of experience
+
+Step 2:
+Technical profile
+- Primary skills
+- Secondary skills
+- Preferred interview areas
+- Experience level
+
+Step 3:
+Resume upload
+
+Upload component:
+- Drag & drop zone
+- PDF and DOCX support
+- File name
+- File size
+- Upload progress animation
+- Remove/re-upload
+- "Analyze Resume" button
+
+After resume analysis display:
+"Resume Intelligence"
+
+Extract/display:
+- Skills
+- Technologies
+- Experience
+- Education
+- Projects
+- Keywords
+- Estimated seniority
+
+Do not fabricate information if extraction fails.
+If parsing is unavailable, allow manual profile completion.
+
+5. DASHBOARD
+Route/view:
+ /dashboard
+
+This should look like a real interview platform.
+
+Header:
+"Good morning, {name}"
+"Ready to test your technical depth?"
+
+Top KPI cards:
+- Interview Readiness
+- Interviews Completed
+- Strongest Skill
+- Current Streak
+
+Main sections:
+
+A. Readiness Score
+Large circular/ring score.
+Breakdown:
+- Fundamentals
+- Problem Solving
+- System Design
+- AI/ML
+- Communication
+
+B. Skill Intelligence
+Horizontal bars or radar-like visualization for:
+- Python
+- Data Structures
+- APIs
+- Databases
+- AI/ML
+- System Design
+
+Use data dynamically from available candidate information.
+Do not hardcode misleading claims.
+
+C. Recommended Interview
+Card showing:
+- Target role
+- Difficulty
+- Estimated duration
+- Topics
+- Why this interview was selected
+
+Button:
+"Start Adaptive Interview"
+
+D. Recent Interviews
+Table/cards:
+- Date
+- Role
+- Score
+- Difficulty
+- Status
+
+E. AI Insight
+Example:
+"Your strongest area is retrieval architecture. Your recent answers suggest that distributed-system trade-offs need deeper practice."
+
+This insight must be derived from available interview data where possible.
+
+6. INTERVIEW SETUP
+Route/view:
+ /interview/setup
+
+Show candidate profile.
+
+Configuration:
+Target role
+Interview type:
+- Technical
+- Coding
+- System Design
+- AI/ML
+- Full Technical
+
+Difficulty:
+- Adaptive (recommended)
+- Intermediate
+- Advanced
+- Expert
+
+Duration:
+- 15 min
+- 30 min
+- 45 min
+
+Topics:
+multi-select chips
+
+Show:
+"InterviewIQ will adapt the interview based on your answers."
+
+Then:
+"Start Interview"
+
+7. LIVE INTERVIEW PAGE
+Route/view:
+ /interview
+
+This is the most important page.
+
+Professional interview workspace.
+
+LEFT:
+Candidate panel:
+- Avatar/initial
+- Name
+- Target role
+- Experience
+- Interview difficulty
+- Current topic
+
+CENTER:
+Conversation area:
+Interviewer message
+Candidate answer
+Typing/loading state
+
+BOTTOM:
+Large answer input
+Submit Answer button
+Keyboard shortcut hint
+
+RIGHT:
+"Interview Intelligence"
+
+Show dynamically:
+- Progress
+- Questions answered
+- Current topic
+- Difficulty: Adaptive
+- Candidate signal
+- Coverage
+
+Example status:
+"Analyzing your answer..."
+then
+"Strong conceptual understanding detected"
+or
+"Follow-up triggered: deeper reasoning required"
+
+Progress should visibly update.
+
+Include:
+- Question number
+- Progress bar
+- Topic label
+- Adaptive indicator
+
+Do NOT expose hidden chain-of-thought.
+Only show concise evaluation signals.
+
+8. FINAL INTERVIEW REPORT
+Route/view:
+ /interview/result
+
+Create a premium results dashboard.
+
+Header:
+"Interview Complete"
+Candidate name
+Role
+Date
+
+Hero score:
+Overall Interview Score
+e.g. 78/100
+
+Breakdown:
+- Technical depth
+- Problem solving
+- Communication
+- System design
+- AI/ML
+
+Strengths:
+Specific bullets.
+
+Gaps:
+Specific bullets.
+
+Adaptive observations:
+"What changed during the interview?"
+
+Topic performance:
+Use progress bars/cards.
+
+Recommended next steps:
+Specific topics based on actual weaknesses.
+
+Interview summary.
+
+Buttons:
+"View Dashboard"
+"Practice Again"
+"Download Report"
+
+9. PROFILE PAGE
+Route/view:
+ /profile
+
+Show:
+- Personal info
+- Role
+- Skills
+- Resume
+- Interview preferences
+- Profile completeness
+
+Allow editing.
+
+10. INTERVIEW HISTORY
+Route/view:
+ /history
+
+List previous sessions with:
+- Date
+- Role
+- Score
+- Difficulty
+- Duration
+- Status
+
+Click opens result details.
+
+GLOBAL APP SHELL:
+
+Authenticated users should get:
+- Sidebar
+  Dashboard
+  Start Interview
+  Interview History
+  Profile
+  Settings
+- Top header
+  Notifications
+  User avatar/menu
+- Mobile responsive navigation
+
+Use React state/localStorage for demo persistence.
+
+ROUTING:
+If react-router-dom is already available use it.
+Otherwise install it.
+
+AUTH:
+Client-side demo auth only:
+- localStorage currentUser
+- localStorage demoAccounts
+- Protected application screens
+- Unauthenticated users redirect to /login
+- Logout clears currentUser
+
+Do NOT modify the required backend API contract.
+
+RESUME PARSING:
+Implement practical browser-side parsing if dependencies can be installed reliably:
+- PDF: pdfjs-dist
+- DOCX: mammoth
+
+Extract text and derive basic structured fields using deterministic parsing.
+Do not pretend an LLM extracted information if no LLM is available.
+
+If parsing cannot reliably extract a field:
+show "Not detected" and let the user manually enter it.
+
+BACKEND INTEGRATION:
+Inspect the existing backend API and existing candidate data.
+
+When starting an interview:
+construct the existing candidate object expected by POST /api/interview.
+
+Do not change the top-level API request shape.
+
+Existing contract must remain compatible:
+START:
+{
+  "sessionId": "...",
+  "candidate": {...}
+}
+
+TURN:
+{
+  "sessionId": "...",
+  "message": "..."
+}
+
+Responses:
+{
+  "reply": "...",
+  "done": false
+}
+
+Final:
+{
+  "reply": "...",
+  "done": true,
+  "feedback": {
+    "summary": "...",
+    "strengths": [],
+    "gaps": [],
+    "next": []
+  }
+}
+
+The frontend must gracefully handle:
+- API unavailable
+- slow API
+- malformed response
+- empty answer
+- interview completion
+
+For API unavailable, show a clear demo-mode error rather than crashing.
+
+DATA:
+Use existing candidates.json and curriculum.json.
+Do not replace the existing adaptive candidate logic with random generic questions.
+
+IMPORTANT UX:
+The application must feel like one coherent product.
+
+Add:
+- loading skeletons
+- toast notifications where appropriate
+- empty states
+- error states
+- smooth transitions
+- button loading states
+- disabled states
+- form validation
+- progress indicators
+
+Do not make every section static.
+Use real state and connect screens together.
+
+DO NOT:
+- create fake backend endpoints just for UI
+- break POST /api/interview
+- remove adaptive interview logic
+- replace the project with a toy implementation
+- generate random static dashboard numbers when real data is available
+- use lorem ipsum
+- use generic placeholder text
+
+IMPLEMENTATION PROCESS:
+1. Inspect all existing files.
+2. Understand current frontend/backend.
+3. Create a clean frontend architecture.
+4. Implement routing and app shell.
+5. Implement authentication/onboarding.
+6. Implement dashboard.
+7. Implement interview setup.
+8. Upgrade live interview.
+9. Implement result/history/profile.
+10. Connect existing API.
+11. Test every route.
+12. Fix build errors.
+13. Run npm build.
+14. Run the backend.
+15. Verify the complete user journey.
+
+After implementation, report:
+- files created
+- files modified
+- dependencies installed
+- commands to run frontend/backend
+- tests/build performed
+- remaining genuine issues
+
+Do not stop after creating the UI. Actually implement and test the complete flow.
