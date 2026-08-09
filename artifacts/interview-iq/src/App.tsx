@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { interviewTurn, type InterviewEvaluation, type InterviewFeedback, type InterviewInput, type InterviewResponse } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -14,7 +15,18 @@ import { Link, Route, Switch, useLocation, useParams, Router as WouterRouter } f
 const queryClient = new QueryClient();
 type Candidate = { name: string; email: string; role: string; experience: string; bio: string; skills: string[]; resumeName?: string };
 type InterviewConfig = { role: string; type: string; difficulty: string; duration: string; topics: string[] };
-type InterviewSession = { id: string; date: string; config: InterviewConfig; score: number; status: string; strengths: string[]; gaps: string[] };
+type InterviewSession = {
+  id: string;
+  date: string;
+  config: InterviewConfig;
+  score: number;
+  status: string;
+  strengths: string[];
+  gaps: string[];
+  feedback?: InterviewFeedback;
+  scoreHistory?: InterviewFeedback['scoreHistory'];
+  topicsCovered?: string[];
+};
 type ToastState = { title: string; message: string } | null;
 
 const defaultCandidate: Candidate = { name: '', email: '', role: 'Senior Software Engineer', experience: '5–7 years', bio: '', skills: ['TypeScript', 'React', 'System design'] };
@@ -125,22 +137,189 @@ function InterviewSetup() {
   return <AppShell title="New interview"><div className="content"><div className="page-intro"><div><span className="eyebrow">Session design</span><h2 className="display">Set the conditions.</h2><p>Choose the kind of pressure you want to practice today.</p></div></div><div className="setup-grid"><section className="surface setup-form"><h3>Interview setup</h3><div className="form-stack" style={{ marginTop: 0 }}><div className="field"><label htmlFor="target-role">Target role</label><input id="target-role" data-testid="input-target-role" value={config.role} onChange={(e) => update('role', e.target.value)} /></div><div className="field"><label>Interview type</label><div className="choice-grid">{[['System design', 'Architecture, scale, tradeoffs'], ['Coding', 'Problem solving, clarity, correctness'], ['Behavioral', 'Decisions, collaboration, ownership'], ['Mixed loop', 'A little of the whole room']].map(([label, hint]) => <button type="button" className={`choice ${config.type === label ? 'selected' : ''}`} onClick={() => update('type', label)} key={label} data-testid={`choice-type-${label}`}><strong>{label}</strong><span>{hint}</span></button>)}</div></div><div className="field"><label>Difficulty</label><div className="choice-grid">{[['Adaptive', 'Moves with your signal'], ['Warm-up', 'Build confidence first'], ['Stretch', 'More follow-ups, less room']].map(([label, hint]) => <button type="button" className={`choice ${config.difficulty === label ? 'selected' : ''}`} onClick={() => update('difficulty', label)} key={label} data-testid={`choice-difficulty-${label}`}><strong>{label}</strong><span>{hint}</span></button>)}</div></div><div className="field"><label>Duration</label><div className="choice-grid">{['15', '20', '30', '45'].map((duration) => <button type="button" className={`choice ${config.duration === duration ? 'selected' : ''}`} onClick={() => update('duration', duration)} key={duration} data-testid={`choice-duration-${duration}`}><strong>{duration} minutes</strong><span>{duration === '20' ? 'Recommended' : 'Focused rep'}</span></button>)}</div></div><div className="field"><label>Topics to include</label><div className="topic-grid">{topics.map((topic) => <button type="button" className={`topic ${config.topics.includes(topic) ? 'selected' : ''}`} onClick={() => setConfig((prev) => ({ ...prev, topics: prev.topics.includes(topic) ? prev.topics.filter((item) => item !== topic) : [...prev.topics, topic] }))} key={topic} data-testid={`toggle-topic-${topic}`}>{config.topics.includes(topic) && <Check size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} />}{topic}</button>)}</div></div><button className="btn btn-primary" onClick={start} data-testid="button-start-interview">Start adaptive interview <ArrowRight size={15} /></button></div></section><aside className="setup-note"><span className="eyebrow" style={{ color: 'hsl(41 93% 62%)' }}>What to expect</span><h3 className="display">A quiet room for loud thinking.</h3><p>There are no trick timers here. The interviewer will ask one question at a time, follow the useful threads, and leave you with a readable report.</p><div className="check-list"><div><ShieldCheck size={16} /> Your answers stay in this workspace.</div><div><BrainCircuit size={16} /> Follow-ups adapt to your answer.</div><div><BarChart3 size={16} /> Every result shows the next rep.</div></div></aside></div><Toast toast={toast} /></div></AppShell>;
 }
 
-async function postInterview(payload: unknown) { try { const response = await fetch('/api/interview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) }); if (!response.ok) throw new Error('Interview service unavailable'); return await response.json(); } catch { return null; } }
-
-function Interview() {
-  const [, setLocation] = useLocation(); const active = getStore<{ id: string; config: InterviewConfig } | null>('activeInterview', null); const candidate = getStore<Candidate>('candidateProfile', demoCandidate); const { showToast, toast } = useToast(); const [messages, setMessages] = useState<{ role: 'ai' | 'user'; text: string }[]>([]); const [answer, setAnswer] = useState(''); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [turn, setTurn] = useState(1);
-  const config = active?.config || { role: candidate.role, type: 'System design', difficulty: 'Adaptive', duration: '20', topics: ['Architecture'] };
-  useEffect(() => { let mounted = true; const boot = async () => { const data = await postInterview({ sessionId: active?.id || `demo-${Date.now()}`, candidate }); if (!mounted) return; setMessages([{ role: 'ai', text: data?.question || `Let’s start with a ${config.type.toLowerCase()} prompt. Walk me through how you would design a resilient event ingestion service for a growing product.` }]); setLoading(false); }; void boot(); return () => { mounted = false; }; }, [active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  const submit = async () => { if (!answer.trim() || loading) return; const current = answer.trim(); setAnswer(''); setMessages((prev) => [...prev, { role: 'user', text: current }]); setLoading(true); setError(''); const data = await postInterview({ sessionId: active?.id || 'demo-session', message: current }); setMessages((prev) => [...prev, { role: 'ai', text: data?.question || (turn === 1 ? 'Good starting frame. Now make the tradeoff explicit: what would you optimize first, and what would you deliberately leave imperfect?' : 'That gives me enough signal for this demo. Your report will focus on framing, depth, and communication.') }]); setTurn((value) => value + 1); setLoading(false); };
-  const finish = () => { const session: InterviewSession = { id: active?.id || `session-${Date.now()}`, date: new Date().toISOString(), config, score: 72 + Math.min(17, turn * 3), status: 'completed', strengths: ['Clear problem framing', 'Strong ownership language'], gaps: ['Make tradeoffs earlier', 'Quantify scale assumptions'] }; const history = getStore<InterviewSession[]>('interviewHistory', []); setStore('interviewHistory', [session, ...history.filter((item) => item.id !== session.id)]); setStore('activeInterview', null); setLocation(`/interview/result?id=${session.id}`); };
-  return <div className="interview-wrap"><header className="interview-top"><Link href="/dashboard" data-testid="link-interview-brand"><Brand light /></Link><div className="interview-status"><span className="live-dot" /><span>DEMO MODE · {config.duration} MINUTES</span><span className="mono">SESSION / {turn.toString().padStart(2, '0')}</span></div><button className="btn btn-ghost btn-sm" style={{ color: 'white', borderColor: 'hsl(222 30% 34%)' }} onClick={finish} data-testid="button-finish-interview">Finish session</button></header><div className="interview-grid"><aside className="candidate-context"><span className="eyebrow" style={{ color: 'hsl(41 93% 62%)' }}>Candidate context</span><h3>{candidate.name || 'Your session'}</h3><p>{candidate.role} · {candidate.experience}</p><div className="context-block"><h4>Topics in scope</h4><div className="context-tags">{config.topics.map((topic) => <span className="context-tag" key={topic}>{topic}</span>)}</div></div><div className="context-block"><h4>Adaptive signal</h4><p style={{ marginTop: 11 }}>The next prompt will follow the clarity and depth in your answer.</p></div></aside><main className="interview-main"><div className="progress-line"><span>Interview in progress</span><span>{Math.min(turn, 6)} / 6 signals</span></div><div className="progress-track"><div style={{ width: `${Math.min(100, turn / 6 * 100)}%` }} /></div><div className="conversation">{messages.map((message, index) => <div className={`bubble ${message.role}`} key={`${message.role}-${index}`} data-testid={`bubble-${message.role}-${index}`}><span className="bubble-label">{message.role === 'ai' ? 'Interviewer' : 'You'}</span>{message.text}</div>)}{loading && <div className="bubble ai"><span className="bubble-label">Interviewer</span><span className="typing"><i /><i /><i /></span></div>}</div>{error && <div className="error-note" data-testid="status-interview-error"><span>{error}</span><button className="btn btn-sm btn-danger" onClick={() => setError('')} data-testid="button-dismiss-error">Dismiss</button></div>}<div className="answer-box"><textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Talk through your thinking. The interviewer is listening for how you get there." data-testid="input-interview-answer" /><div className="answer-actions"><span><CircleHelp size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />Be specific about assumptions.</span><button className="btn btn-primary btn-sm" onClick={submit} disabled={!answer.trim() || loading} data-testid="button-submit-answer">Submit answer <Send size={13} /></button></div></div><span className="mono" style={{ display: 'block', textAlign: 'center', marginTop: 14, color: 'hsl(218 25% 52%)', fontSize: 10 }}>No hidden reasoning is displayed. Feedback arrives in your report.</span></main></div><Toast toast={toast} /></div>;
+async function postInterview(payload: InterviewInput): Promise<InterviewResponse> {
+  return interviewTurn(payload);
 }
 
-function Result() {
+type InterviewMessage = {
+  role: 'ai' | 'user';
+  text: string;
+  evaluation?: InterviewEvaluation;
+  reason?: string;
+};
+
+type ActiveInterviewSnapshot = {
+  id: string;
+  config: InterviewConfig;
+  startedAt: string;
+  messages?: InterviewMessage[];
+  evaluation?: InterviewEvaluation;
+  feedback?: InterviewFeedback;
+  progress?: number;
+  questionsAnswered?: number;
+  totalQuestions?: number;
+  questionNumber?: number;
+  topic?: string;
+  difficulty?: string;
+  done?: boolean;
+};
+
+function EvaluationCard({ evaluation, reason }: { evaluation: InterviewEvaluation; reason?: string }) {
+  return <section className="evaluation-card" data-testid="card-answer-evaluation">
+    <div className="evaluation-head">
+      <div><span className="eyebrow" style={{ color: 'hsl(41 93% 62%)' }}>Answer signal</span><h3>{evaluation.topic} · evaluated</h3></div>
+      <div className="evaluation-score"><strong>{Math.round(evaluation.score)}</strong><span>/ 10</span></div>
+    </div>
+    <div className="evaluation-grid">
+      <div><span>Technical</span><b>{Math.round(evaluation.technicalCorrectness)}/10</b></div>
+      <div><span>Depth</span><b>{Math.round(evaluation.depth)}/10</b></div>
+      <div><span>Clarity</span><b>{Math.round(evaluation.clarity)}/10</b></div>
+      <div><span>Applied</span><b>{Math.round(evaluation.practicalUnderstanding)}/10</b></div>
+    </div>
+    <div className="evaluation-columns">
+      <div><span className="evaluation-label">What held</span><ul>{evaluation.strengths.slice(0, 2).map((item) => <li key={item}>{item}</li>)}</ul></div>
+      <div><span className="evaluation-label">One improvement</span><ul>{evaluation.weaknesses.slice(0, 1).map((item) => <li key={item}>{item}</li>)}</ul></div>
+    </div>
+    {evaluation.misconceptions?.length > 0 && <p className="evaluation-note"><strong>Technical note:</strong> {evaluation.misconceptions[0]}</p>}
+    <p className="evaluation-reason"><Lightbulb size={14} />{reason || evaluation.reason}</p>
+  </section>;
+}
+
+function Interview() {
+  const [, setLocation] = useLocation();
+  const active = getStore<ActiveInterviewSnapshot | null>('activeInterview', null);
+  const candidate = getStore<Candidate>('candidateProfile', demoCandidate);
+  const { toast } = useToast();
+  const [messages, setMessages] = useState<InterviewMessage[]>(active?.messages || []);
+  const [answer, setAnswer] = useState('');
+  const [loading, setLoading] = useState(messages.length === 0);
+  const [error, setError] = useState('');
+  const [evaluation, setEvaluation] = useState<InterviewEvaluation | undefined>(active?.evaluation);
+  const [feedback, setFeedback] = useState<InterviewFeedback | undefined>(active?.feedback);
+  const [progress, setProgress] = useState(active?.progress ?? 0);
+  const [questionsAnswered, setQuestionsAnswered] = useState(active?.questionsAnswered ?? 0);
+  const [totalQuestions, setTotalQuestions] = useState(active?.totalQuestions ?? 8);
+  const [questionNumber, setQuestionNumber] = useState(active?.questionNumber ?? 1);
+  const [topic, setTopic] = useState(active?.topic || 'RAG');
+  const [difficulty, setDifficulty] = useState(active?.difficulty || 'Foundational');
+  const [done, setDone] = useState(active?.done ?? false);
+  const [reason, setReason] = useState('');
+  const config = active?.config || { role: candidate.role, type: 'System design', difficulty: 'Adaptive', duration: '20', topics: ['Architecture'] };
+  const sessionId = active?.id || `session-${Date.now()}`;
+
+  const persist = (patch: Partial<ActiveInterviewSnapshot>) => {
+    const current = getStore<ActiveInterviewSnapshot | null>('activeInterview', active);
+    if (current) setStore('activeInterview', { ...current, ...patch });
+  };
+
+  useEffect(() => {
+    if (messages.length > 0 || !active) return;
+    let mounted = true;
+    const boot = async () => {
+      try {
+        const data = await postInterview({
+          sessionId,
+          candidate: { ...candidate, interviewConfig: config },
+        });
+        if (!mounted) return;
+        setMessages([{ role: 'ai', text: data.reply }]);
+        setProgress(data.progress ?? 0);
+        setQuestionsAnswered(data.questionsAnswered ?? 0);
+        setTotalQuestions(data.totalQuestions ?? 8);
+        setQuestionNumber(data.questionNumber ?? 1);
+        setTopic(data.topic ?? 'RAG');
+        setDifficulty(data.difficulty ?? 'Foundational');
+        persist({ messages: [{ role: 'ai', text: data.reply }], progress: data.progress, questionsAnswered: data.questionsAnswered, totalQuestions: data.totalQuestions, questionNumber: data.questionNumber, topic: data.topic, difficulty: data.difficulty });
+      } catch {
+        if (mounted) setError('The interview service is unavailable. Restart the session to try again.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    void boot();
+    return () => { mounted = false; };
+  }, [active?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const submit = async () => {
+    if (!answer.trim() || loading || done) return;
+    const current = answer.trim();
+    const nextMessages = [...messages, { role: 'user' as const, text: current }];
+    setAnswer('');
+    setMessages(nextMessages);
+    setLoading(true);
+    setError('');
+    setEvaluation(undefined);
+    try {
+      const data = await postInterview({ sessionId, message: current });
+      const nextEvaluation = data.evaluation;
+      const responseMessage: InterviewMessage = { role: 'ai', text: data.reply, reason: data.nextQuestionReason };
+      const completedMessages = [...nextMessages, responseMessage];
+      setMessages(completedMessages);
+      setEvaluation(nextEvaluation);
+      setFeedback(data.feedback);
+      setProgress(data.progress ?? progress);
+      setQuestionsAnswered(data.questionsAnswered ?? questionsAnswered + 1);
+      setTotalQuestions(data.totalQuestions ?? totalQuestions);
+      setQuestionNumber(data.questionNumber ?? questionNumber + 1);
+      setTopic(data.topic ?? topic);
+      setDifficulty(data.difficulty ?? difficulty);
+      setReason(data.nextQuestionReason || '');
+      setDone(data.done);
+      persist({ messages: completedMessages, evaluation: nextEvaluation, feedback: data.feedback, progress: data.progress, questionsAnswered: data.questionsAnswered, totalQuestions: data.totalQuestions, questionNumber: data.questionNumber, topic: data.topic, difficulty: data.difficulty, done: data.done });
+    } catch {
+      setError('We could not evaluate that answer. Your draft is still in this session—please try submitting again.');
+      setMessages(messages);
+      setAnswer(current);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const finish = () => {
+    if (!done || !feedback) return;
+    const session: InterviewSession = {
+      id: sessionId,
+      date: new Date().toISOString(),
+      config,
+      score: feedback.overallScore,
+      status: 'completed',
+      strengths: feedback.strengths,
+      gaps: feedback.gaps,
+      feedback,
+      scoreHistory: feedback.scoreHistory,
+      topicsCovered: Object.keys(feedback.topicPerformance),
+    };
+    const history = getStore<InterviewSession[]>('interviewHistory', []);
+    setStore('interviewHistory', [session, ...history.filter((item) => item.id !== session.id)]);
+    setStore('activeInterview', null);
+    setLocation(`/interview/result?id=${session.id}`);
+  };
+
+  return <div className="interview-wrap"><header className="interview-top"><Link href="/dashboard" data-testid="link-interview-brand"><Brand light /></Link><div className="interview-status"><span className="live-dot" /><span>ADAPTIVE · {config.duration} MINUTES</span><span className="mono">QUESTION / {questionNumber.toString().padStart(2, '0')}</span></div><button className="btn btn-ghost btn-sm" style={{ color: 'white', borderColor: 'hsl(222 30% 34%)' }} onClick={finish} disabled={!done} data-testid="button-finish-interview">{done ? 'View report' : `Complete ${totalQuestions} questions`}</button></header><div className="interview-grid"><aside className="candidate-context"><span className="eyebrow" style={{ color: 'hsl(41 93% 62%)' }}>Candidate context</span><h3>{candidate.name || 'Your session'}</h3><p>{candidate.role} · {candidate.experience}</p><div className="context-block"><h4>Current topic</h4><div className="context-tags"><span className="context-tag">{topic}</span><span className="context-tag">{difficulty}</span></div></div><div className="context-block"><h4>Interview intelligence</h4><p style={{ marginTop: 11 }}>Each response is scored for correctness, depth, clarity, and applied understanding before the next prompt is chosen.</p></div>{evaluation && <div className="context-block"><h4>Running score</h4><p className="running-score">{questionsAnswered ? Math.round((evaluation.score / 10) * 100) : 0}<small>/ 100 latest</small></p></div>}</aside><main className="interview-main"><div className="progress-line"><span>Interview in progress</span><span>{questionsAnswered} / {totalQuestions} answered · {progress}%</span></div><div className="progress-track"><div style={{ width: `${progress}%` }} /></div><div className="conversation">{messages.map((message, index) => <div className={`bubble ${message.role}`} key={`${message.role}-${index}`} data-testid={`bubble-${message.role}-${index}`}><span className="bubble-label">{message.role === 'ai' ? 'Interviewer' : 'You'}</span>{message.text}{message.evaluation && <EvaluationCard evaluation={message.evaluation} reason={message.reason} />}</div>)}{evaluation && !done && <EvaluationCard evaluation={evaluation} reason={reason} />}{loading && <div className="bubble ai"><span className="bubble-label">{questionsAnswered ? 'Evaluating response…' : 'Interviewer'}</span><span className="typing"><i /><i /><i /></span></div>}</div>{error && <div className="error-note" data-testid="status-interview-error"><span>{error}</span><button className="btn btn-sm btn-danger" onClick={() => setError('')} data-testid="button-dismiss-error">Dismiss</button></div>}{!done ? <div className="answer-box"><textarea value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Talk through your thinking. The interviewer is listening for how you get there." data-testid="input-interview-answer" /><div className="answer-actions"><span><CircleHelp size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />Be specific about assumptions and tradeoffs.</span><button className="btn btn-primary btn-sm" onClick={submit} disabled={!answer.trim() || loading} data-testid="button-submit-answer">{loading && questionsAnswered ? 'Evaluating…' : 'Submit answer'} <Send size={13} /></button></div></div> : <div className="completion-panel"><CheckCircle2 size={20} /><div><strong>Interview complete.</strong><span>All {totalQuestions} answer signals are ready for your report.</span></div><button className="btn btn-primary btn-sm" onClick={finish} data-testid="button-view-report">View report <ArrowRight size={13} /></button></div>}<span className="mono" style={{ display: 'block', textAlign: 'center', marginTop: 14, color: 'hsl(218 25% 52%)', fontSize: 10 }}>No hidden reasoning is displayed. Only concise evaluation signals are shown.</span></main></div><Toast toast={toast} /></div>;
+}
+
+function LegacyResult() {
   const [, setLocation] = useLocation(); const query = new URLSearchParams(window.location.search); const history = getStore<InterviewSession[]>('interviewHistory', []); const session = history.find((item) => item.id === query.get('id')) || history[0];
   if (!session) return <AppShell title="Interview result"><div className="content"><div className="surface empty"><BarChart3 size={28} /><h3>No result yet.</h3><p>Finish an interview to see a report built from your local practice data.</p><Link className="btn btn-primary" href="/interview/setup" data-testid="link-result-empty-setup">Start an interview <ArrowRight size={14} /></Link></div></div></AppShell>;
   const metrics = [['Problem framing', Math.min(92, session.score + 7)], ['Technical depth', Math.max(55, session.score - 3)], ['Communication', Math.min(90, session.score + 2)], ['Tradeoff fluency', Math.max(54, session.score - 8)]];
   return <AppShell title="Interview result"><div className="content"><div className="page-intro"><div><span className="eyebrow">Report / {new Date(session.date).toLocaleDateString()}</span><h2 className="display">A useful read, not a verdict.</h2><p>{session.config.role} · {session.config.type} · {session.config.duration} minutes</p></div><div className="result-actions"><Link className="btn btn-ghost btn-sm" href="/history" data-testid="button-result-history"><History size={14} /> History</Link><button className="btn btn-primary btn-sm" onClick={() => setLocation('/interview/setup')} data-testid="button-result-again"><RotateCcw size={14} /> Practice again</button></div></div><section className="result-hero"><div><span className="eyebrow" style={{ color: 'hsl(41 93% 62%)' }}>Adaptive observation</span><h2>Strong frame. Make the tradeoff visible sooner.</h2><p>You established a clear direction and kept the answer moving. The next improvement is to name your constraints before the solution gets detailed.</p></div><div className="result-score" data-testid="text-result-score"><div><strong>{session.score}</strong><span>/ 100</span></div></div></section><div className="result-columns"><section className="surface card-pad"><div className="card-title"><h3>Signal breakdown</h3><span className="mono muted" style={{ fontSize: 10 }}>LOCAL DATA</span></div><div className="breakdown">{metrics.map(([label, value]) => <div className="breakdown-row" key={label as string}><span>{label as string}</span><div className="bar-track"><div className="bar-fill" style={{ width: `${value}%` }} /></div><b>{value}</b></div>)}</div></section><section className="surface card-pad summary-box"><div className="card-title"><h3><Sparkles size={16} style={{ verticalAlign: 'middle', marginRight: 7 }} />Session summary</h3></div><p>You communicated a credible approach and showed good instinct for sequencing. When the prompt got more specific, your answer would benefit from pausing to state the decision criteria in plain language.</p><div className="card-title" style={{ marginTop: 22, marginBottom: 10 }}><h3>Observed strengths</h3></div><div className="tag-list">{session.strengths.map((item) => <span key={item}><CheckCircle2 size={12} style={{ color: 'hsl(var(--primary))', verticalAlign: 'middle', marginRight: 5 }} />{item}</span>)}</div></section></div><div className="result-columns"><section className="surface card-pad"><div className="card-title"><h3>Keep doing</h3><span className="eyebrow">Strengths</span></div><div className="history-list">{session.strengths.map((strength) => <div className="history-row" key={strength}><div><h4>{strength}</h4><p>This showed up as a repeatable behavior in the session.</p></div><CheckCircle2 size={17} color="hsl(var(--primary))" /></div>)}</div></section><section className="surface card-pad"><div className="card-title"><h3>Next rep</h3><span className="eyebrow accent-text">Gaps</span></div><div className="history-list">{session.gaps.map((gap) => <div className="history-row" key={gap}><div><h4>{gap}</h4><p>Try making this explicit in your next answer.</p></div><Target size={17} color="hsl(var(--accent))" /></div>)}</div></section></div></div></AppShell>;
+}
+
+function Result() {
+  const [, setLocation] = useLocation();
+  const query = new URLSearchParams(window.location.search);
+  const history = getStore<InterviewSession[]>('interviewHistory', []);
+  const session = history.find((item) => item.id === query.get('id')) || history[0];
+  if (!session) return <AppShell title="Interview result"><div className="content"><div className="surface empty"><BarChart3 size={28} /><h3>No result yet.</h3><p>Finish an interview to see a report built from your local practice data.</p><Link className="btn btn-primary" href="/interview/setup" data-testid="link-result-empty-setup">Start an interview <ArrowRight size={14} /></Link></div></div></AppShell>;
+  const feedback = session.feedback;
+  const metrics = feedback
+    ? [['Technical knowledge', feedback.technicalScore], ['Communication', feedback.communicationScore], ['Problem solving', feedback.problemSolvingScore], ['Overall signal', feedback.overallScore]]
+    : [['Technical knowledge', session.score], ['Communication', session.score], ['Problem solving', session.score], ['Overall signal', session.score]];
+  const topicPerformance = feedback?.topicPerformance || {};
+  const scoreHistory = feedback?.scoreHistory || session.scoreHistory || [];
+  const misconceptions = feedback?.misconceptions || [];
+  const nextSteps = feedback?.next || session.gaps;
+  return <AppShell title="Interview result"><div className="content"><div className="page-intro"><div><span className="eyebrow">Report / {new Date(session.date).toLocaleDateString()}</span><h2 className="display">A useful read, not a verdict.</h2><p>{session.config.role} · {session.config.type} · {session.config.duration} minutes · {feedback?.difficultyReached || 'Adaptive'}</p></div><div className="result-actions"><Link className="btn btn-ghost btn-sm" href="/history" data-testid="button-result-history"><History size={14} /> History</Link><button className="btn btn-primary btn-sm" onClick={() => setLocation('/interview/setup')} data-testid="button-result-again"><RotateCcw size={14} /> Practice again</button></div></div><section className="result-hero"><div><span className="eyebrow" style={{ color: 'hsl(41 93% 62%)' }}>Hiring-style assessment</span><h2>{feedback?.hiringAssessment || 'Complete an adaptive session to generate a structured assessment.'}</h2><p>{feedback?.summary || 'This session predates answer-level evaluation. Run a new interview to unlock the full report.'}</p></div><div className="result-score" data-testid="text-result-score"><div><strong>{feedback?.overallScore ?? session.score}</strong><span>/ 100</span></div></div></section><div className="result-columns"><section className="surface card-pad"><div className="card-title"><h3>Signal breakdown</h3><span className="mono muted" style={{ fontSize: 10 }}>ANSWER-LEVEL DATA</span></div><div className="breakdown">{metrics.map(([label, value]) => <div className="breakdown-row" key={label as string}><span>{label as string}</span><div className="bar-track"><div className="bar-fill" style={{ width: `${value}%` }} /></div><b>{value}</b></div>)}</div></section><section className="surface card-pad summary-box"><div className="card-title"><h3><Sparkles size={16} style={{ verticalAlign: 'middle', marginRight: 7 }} />Observed strengths</h3><span className="mono muted" style={{ fontSize: 10 }}>{feedback?.difficultyReached || 'LOCAL DATA'}</span></div><p>{feedback?.summary || 'No generated summary is available for this session yet.'}</p><div className="tag-list">{session.strengths.map((item) => <span key={item}><CheckCircle2 size={12} style={{ color: 'hsl(var(--primary))', verticalAlign: 'middle', marginRight: 5 }} />{item}</span>)}</div></section></div><div className="result-columns"><section className="surface card-pad"><div className="card-title"><h3>Topic performance</h3><span className="eyebrow">Curriculum coverage</span></div>{Object.keys(topicPerformance).length ? <div className="breakdown">{Object.entries(topicPerformance).map(([label, value]) => <div className="breakdown-row" key={label}><span>{label}</span><div className="bar-track"><div className="bar-fill" style={{ width: `${value}%` }} /></div><b>{value}</b></div>)}</div> : <p className="muted" style={{ fontSize: 13 }}>Run an adaptive session to see performance across the technical curriculum.</p>}</section><section className="surface card-pad"><div className="card-title"><h3>Personalized recommendations</h3><span className="eyebrow accent-text">Next rep</span></div><div className="history-list">{nextSteps.map((item) => <div className="history-row" key={item}><div><h4>{item}</h4><p>Use a concrete production example in your next timed answer.</p></div><Target size={17} color="hsl(var(--accent))" /></div>)}</div></section></div><div className="result-columns"><section className="surface card-pad"><div className="card-title"><h3>Knowledge gaps & misconceptions</h3><span className="mono muted" style={{ fontSize: 10 }}>CONCISE SIGNALS</span></div>{misconceptions.length ? <div className="history-list">{misconceptions.map((item) => <div className="history-row" key={item}><div><h4>{item}</h4><p>Revisit this before increasing interview difficulty.</p></div></div>)}</div> : <div className="empty" style={{ padding: '25px 10px' }}><CheckCircle2 size={22} /><p>No flagged misconceptions in this session.</p></div>}</section><section className="surface card-pad"><div className="card-title"><h3>Question-by-question</h3><span className="mono muted" style={{ fontSize: 10 }}>{scoreHistory.length} SCORES</span></div>{scoreHistory.length ? <div className="history-list">{scoreHistory.map((item, index) => <div className="history-row" key={`${String(item.question)}-${index}`}><div><h4>Question {String(item.question)} · {String(item.topic)}</h4><p>{String(item.difficulty)} difficulty</p></div><span className="score-pill">{String(item.score)}/100</span></div>)}</div> : <p className="muted" style={{ fontSize: 13 }}>Answer-level score history appears after completing the adaptive interview.</p>}</section></div></div></AppShell>;
 }
 
 function Profile() {

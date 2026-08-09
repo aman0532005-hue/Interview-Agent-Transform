@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: interview
+    description: Adaptive technical interview operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /interview:
+    post:
+      operationId: interviewTurn
+      tags: [interview]
+      summary: Start or continue an adaptive interview
+      description: Starts a session when candidate is provided, or evaluates a submitted answer and advances the session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InterviewInput"
+      responses:
+        "200":
+          description: Interview question, evaluation, or final report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewResponse"
+        "400":
+          description: Invalid interview request
+        "404":
+          description: Interview session not found
 components:
   schemas:
     HealthStatus:
@@ -33,4 +58,173 @@ components:
           type: string
       required:
         - status
+    InterviewInput:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          minLength: 1
+        candidate:
+          type: object
+          additionalProperties: true
+        message:
+          type: string
+      required:
+        - sessionId
+    InterviewEvaluation:
+      type: object
+      properties:
+        score:
+          type: number
+          minimum: 0
+          maximum: 10
+        technicalCorrectness:
+          type: number
+          minimum: 0
+          maximum: 10
+        depth:
+          type: number
+          minimum: 0
+          maximum: 10
+        clarity:
+          type: number
+          minimum: 0
+          maximum: 10
+        practicalUnderstanding:
+          type: number
+          minimum: 0
+          maximum: 10
+        relevance:
+          type: number
+          minimum: 0
+          maximum: 10
+        completeness:
+          type: number
+          minimum: 0
+          maximum: 10
+        verdict:
+          type: string
+          enum: [correct, partially_correct, incorrect, incomplete, irrelevant, uncertain]
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        missingConcepts:
+          type: array
+          items:
+            type: string
+        misconceptions:
+          type: array
+          items:
+            type: string
+        needsFollowUp:
+          type: boolean
+        reason:
+          type: string
+        topic:
+          type: string
+      required:
+        - score
+        - technicalCorrectness
+        - depth
+        - clarity
+        - practicalUnderstanding
+        - relevance
+        - completeness
+        - verdict
+        - strengths
+        - weaknesses
+        - missingConcepts
+        - misconceptions
+        - needsFollowUp
+        - reason
+        - topic
+    InterviewFeedback:
+      type: object
+      properties:
+        summary:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        gaps:
+          type: array
+          items:
+            type: string
+        next:
+          type: array
+          items:
+            type: string
+        overallScore:
+          type: number
+        technicalScore:
+          type: number
+        communicationScore:
+          type: number
+        problemSolvingScore:
+          type: number
+        topicPerformance:
+          type: object
+          additionalProperties:
+            type: number
+        misconceptions:
+          type: array
+          items:
+            type: string
+        difficultyReached:
+          type: string
+        hiringAssessment:
+          type: string
+        scoreHistory:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - summary
+        - strengths
+        - gaps
+        - next
+        - overallScore
+        - technicalScore
+        - communicationScore
+        - problemSolvingScore
+        - topicPerformance
+        - misconceptions
+        - difficultyReached
+        - hiringAssessment
+        - scoreHistory
+    InterviewResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+        done:
+          type: boolean
+        evaluation:
+          $ref: "#/components/schemas/InterviewEvaluation"
+        feedback:
+          $ref: "#/components/schemas/InterviewFeedback"
+        progress:
+          type: number
+        questionsAnswered:
+          type: number
+        totalQuestions:
+          type: number
+        questionNumber:
+          type: number
+        topic:
+          type: string
+        difficulty:
+          type: string
+        nextQuestionReason:
+          type: string
+      required:
+        - reply
+        - done
 

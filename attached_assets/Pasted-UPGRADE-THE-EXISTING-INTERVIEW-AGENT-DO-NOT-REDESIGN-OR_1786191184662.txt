@@ -1,0 +1,177 @@
+UPGRADE THE EXISTING INTERVIEW AGENT. DO NOT REDESIGN OR REBUILD THE UI FROM SCRATCH. KEEP THE CURRENT UI, ROUTES, COMPONENTS, AND VISUAL DESIGN. WE NEED TO FIX THE CORE INTERVIEW INTELLIGENCE.
+
+CURRENT PROBLEM:
+The UI looks good, but the interview experience currently behaves too much like a static/scripted chatbot. It does not genuinely evaluate the candidate's answers, score performance, adapt questions based on answers, or generate meaningful final feedback.
+
+THIS IS A HACKATHON FOR PROBLEM STATEMENT 2: "THE INTERVIEW AGENT".
+
+The implementation MUST demonstrate a real multi-turn adaptive technical interview.
+
+CORE FLOW:
+
+1. Candidate starts an interview.
+
+2. Agent asks a technical question based on the candidate's curriculum/profile.
+
+3. Candidate submits an answer.
+
+4. The system evaluates that answer BEFORE asking the next question.
+
+5. Evaluation must consider:
+   - technical correctness
+   - depth of understanding
+   - clarity
+   - practical/application understanding
+   - misconceptions
+   - missing concepts
+
+6. Generate a numerical score from 0-10 for each answer.
+
+7. Generate a short internal evaluation object such as:
+
+{
+  "score": 7,
+  "technicalCorrectness": 8,
+  "depth": 6,
+  "clarity": 7,
+  "practicalUnderstanding": 6,
+  "strengths": ["..."],
+  "weaknesses": ["..."],
+  "missingConcepts": ["..."],
+  "needsFollowUp": true,
+  "reason": "..."
+}
+
+8. DO NOT expose all internal reasoning/chain-of-thought to the candidate. Only show concise feedback appropriate for a technical interview.
+
+9. Based on the evaluation, dynamically choose the next question.
+
+IMPORTANT:
+The next question MUST depend on the previous answer.
+
+Examples:
+- Strong answer -> increase difficulty or move toward system design.
+- Weak answer -> ask a simpler clarification/follow-up.
+- Partially correct answer -> probe the missing concept.
+- Candidate mentions something interesting -> ask a deeper question about it.
+- Candidate gives an incorrect technical claim -> challenge/correct it through a follow-up question.
+
+10. The interview must cover at least 8 questions across at least 4 different curriculum days/topics, satisfying the hackathon requirement.
+
+11. Questions must NOT simply be a hardcoded list of 8 questions.
+
+12. Maintain interview state throughout the session:
+   - questions asked
+   - candidate answers
+   - evaluations
+   - topics covered
+   - current difficulty
+   - strengths
+   - weaknesses
+   - total score
+
+13. At the end generate a structured interview report.
+
+FINAL REPORT MUST INCLUDE:
+
+- Overall score /100
+- Technical score
+- Communication score
+- Problem-solving/system-thinking score
+- Topic-wise performance
+- Strongest areas
+- Weakest areas
+- Important misconceptions
+- Recommended topics to revise
+- Interview difficulty reached
+- Short hiring-style assessment
+- Question-by-question score history
+
+Example:
+
+Overall: 78/100
+Level: Intermediate
+
+RAG: 84%
+Vector Databases: 72%
+Prompt Engineering: 91%
+Agentic AI: 65%
+
+Strengths:
+- Good understanding of retrieval concepts
+- Strong prompt engineering knowledge
+
+Weaknesses:
+- Weakness in agent architecture
+- Limited understanding of failure handling
+
+Recommendation:
+"Candidate demonstrates solid intermediate-level AI engineering knowledge but should strengthen production agent architecture and reliability."
+
+UI REQUIREMENTS:
+
+Keep the existing visual design.
+
+Improve the interview screen to visibly communicate that evaluation is happening.
+
+After submitting an answer, show a subtle "Evaluating response..." state.
+
+Then show a compact evaluation card containing:
+- Score
+- 1-2 strengths
+- 1 key improvement
+- "Why I'm asking this next" or similar explanation
+
+Do NOT reveal hidden chain-of-thought.
+
+Add:
+- Interview progress (e.g. 4/8)
+- Current topic
+- Difficulty indicator
+- Running score
+- Topic performance if appropriate
+
+At the end, create a polished results dashboard with charts/cards.
+
+BACKEND REQUIREMENTS:
+
+Inspect the EXISTING backend/API architecture before changing anything.
+
+Do not create unnecessary duplicate servers.
+
+Use the existing API server and existing API client where possible.
+
+If an AI model/API integration already exists, reuse it.
+
+If no model API is configured, implement a clean provider abstraction and a deterministic fallback evaluator so the demo still works.
+
+The evaluator MUST NOT simply assign random scores.
+
+The fallback should evaluate using meaningful rubric-based heuristics.
+
+IMPORTANT HACKATHON REQUIREMENTS:
+
+The solution must satisfy:
+- conversational technical interview
+- minimum 8 questions
+- at least 4 curriculum days
+- follow-up questions based on previous responses
+- conversation context
+- structured feedback at the end
+- required HTTP API architecture
+
+Do not break existing routes.
+
+Before finishing:
+1. Run typecheck.
+2. Run build.
+3. Fix all TypeScript/build errors.
+4. Verify the interview flow from start to final report.
+5. Make sure refreshing or restarting the frontend does not break the demo unnecessarily.
+6. Keep the existing UI quality.
+
+MOST IMPORTANT:
+Prioritize actual adaptive interview intelligence over adding more decorative UI.
+
+DO NOT just simulate evaluation visually.
+The answer evaluation must actually influence the next question and final score.

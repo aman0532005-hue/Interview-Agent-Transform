@@ -1,0 +1,667 @@
+You are working directly inside my existing Interview-IQ project.
+
+I have a strict usage/time constraint, so treat this as ONE complete implementation task. Do not stop after an audit, do not ask me to provide another prompt, and do not split the work into multiple phases.
+
+The existing UI is already GOOD and APPROVED.
+
+## ABSOLUTE UI RULE
+
+DO NOT redesign the UI.
+
+Do not change:
+
+* colors
+* layout
+* typography
+* existing cards
+* animations
+* navigation
+* visual style
+* existing components
+
+Only make minimal frontend changes when required to connect the improved backend/database/AI functionality.
+
+The priority is FUNCTIONALITY, not cosmetics.
+
+---
+
+# MAIN OBJECTIVE
+
+Transform the existing Interview-IQ from a visually good interview demo into a genuinely functional AI interviewer.
+
+The three biggest problems I want fixed are:
+
+1. Database/data persistence is not robust enough.
+2. The interviewer feels fake because it often praises almost any answer.
+3. Questions do not feel genuinely adaptive to what the candidate actually says.
+
+Build a reliable end-to-end system where:
+
+Candidate
+→ Answer
+→ AI Evaluation
+→ Interviewer Reaction
+→ Adaptive Follow-up
+→ Persistent Database
+→ Final Intelligence Report
+
+Everything must be based on the candidate's real responses.
+
+---
+
+# PRIORITY ORDER
+
+If you encounter implementation constraints, follow this priority:
+
+P0 — Database persistence
+P0 — Objective AI answer evaluation
+P0 — Adaptive next-question engine
+P0 — Interview context/memory
+P0 — Reliable interview flow
+P0 — Final report based on real data
+
+P1 — Better real-time interaction/loading states
+P1 — Skill breakdown
+P1 — Knowledge-gap detection
+
+P2 — Optional enhancements only if the above are completely stable
+
+Do NOT spend time on cosmetic improvements.
+
+---
+
+# 1. FIRST INSPECT THE EXISTING PROJECT
+
+Before modifying anything, inspect the existing codebase and determine:
+
+* frontend framework
+* backend architecture
+* current database
+* current database schema/models
+* existing API routes
+* AI provider/API integration
+* interview state management
+* current question generation
+* current answer handling
+* current report generation
+* mock/static data
+* localStorage/in-memory persistence
+* existing voice functionality if any
+
+Then implement improvements directly.
+
+IMPORTANT:
+Reuse the existing architecture wherever practical.
+
+Do NOT replace a working database/framework just for the sake of using another technology.
+
+Do NOT rewrite the whole application.
+
+---
+
+# 2. PROPER DATABASE ARCHITECTURE
+
+Make the existing database genuinely persistent.
+
+The logical data model should support:
+
+USER
+↓
+INTERVIEW
+↓
+QUESTIONS
+↓
+ANSWERS
+↓
+EVALUATIONS
+↓
+FINAL REPORT
+
+At minimum, persist:
+
+## User
+
+* id
+* name/email if already supported
+* createdAt
+* updatedAt
+
+## Interview
+
+* id
+* userId
+* role
+* interviewType
+* difficulty
+* status
+* startedAt
+* completedAt
+* overallScore
+* summary
+
+## Question
+
+* id
+* interviewId
+* questionText
+* topic
+* difficulty
+* sequence
+* type
+
+## Answer
+
+* id
+* questionId
+* interviewId
+* answerText
+* submittedAt
+* duration if available
+
+## Evaluation
+
+* id
+* answerId
+* interviewId
+* correctness
+* relevance
+* completeness
+* depth
+* communication
+* overallScore
+* verdict
+* strengths
+* mistakes
+* missingConcepts
+* feedback
+* nextAction
+
+## Final Report
+
+* id
+* interviewId
+* overallScore
+* strengths
+* weaknesses
+* knowledgeGaps
+* recommendedTopics
+* summary
+* recommendation
+
+Use the project's existing ORM/database conventions.
+
+Do not create duplicate parallel database systems.
+
+Remove or bypass mock/in-memory data where persistent data is required.
+
+---
+
+# 3. DATABASE MUST ACTUALLY WORK
+
+Verify that:
+
+* creating an interview persists it
+* questions persist
+* candidate answers persist
+* evaluations persist
+* completed reports persist
+* interview history can be retrieved
+* refreshing the browser does not erase the interview
+* logout/login does not erase completed interviews
+* duplicate answer submissions are prevented
+* frontend cannot directly decide the score
+* final scores come from backend evaluation data
+
+If the existing project already has some of these features, preserve them and fix only what is broken.
+
+---
+
+# 4. REPLACE FAKE AI BEHAVIOR
+
+This is extremely important.
+
+The interviewer currently feels fake because it tends to appreciate almost every answer.
+
+Fix this completely.
+
+The AI must NOT automatically say:
+
+"Great answer!"
+"Excellent!"
+"Perfect!"
+"That's absolutely correct!"
+
+unless the candidate's actual answer deserves that evaluation.
+
+The AI must be willing to disagree.
+
+For every answer, objectively evaluate:
+
+1. Technical correctness
+2. Relevance
+3. Completeness
+4. Depth
+5. Communication quality
+6. Misconceptions
+7. Missing concepts
+8. Overall quality
+
+Classify every answer as exactly one of:
+
+* correct
+* partially_correct
+* incorrect
+* incomplete
+* irrelevant
+* uncertain
+
+Return/store structured evaluation data.
+
+Example:
+
+A technically wrong answer should produce an evaluation such as:
+
+verdict: incorrect
+overallScore: low
+mistakes: [...]
+feedback: explain the actual misconception
+nextAction: clarify
+
+NOT:
+
+"Great answer! Let's move on."
+
+A partially correct answer should identify:
+
+* what was correct
+* what was missing
+* what was wrong
+
+An excellent answer should:
+
+* acknowledge it briefly
+* increase difficulty
+* move toward deeper reasoning
+
+"I don't know" should NOT be treated as a correct answer.
+
+An irrelevant answer should be identified as irrelevant.
+
+A one-word answer should be treated according to its actual usefulness.
+
+---
+
+# 5. ADAPTIVE INTERVIEW ENGINE
+
+The next question MUST depend on the candidate's actual answer and evaluation.
+
+Do NOT simply execute:
+
+Question 1
+Question 2
+Question 3
+Question 4
+...
+
+from a static list.
+
+Use the evaluation to decide what happens next.
+
+Examples:
+
+HIGH SCORE
+→ increase difficulty
+
+MEDIUM SCORE
+→ targeted follow-up
+
+LOW SCORE
+→ probe fundamentals
+
+INCORRECT
+→ challenge/correct misconception
+
+INCOMPLETE
+→ ask for missing part
+
+REPEATED MISTAKE
+→ record knowledge gap and probe it
+
+STRONG TOPIC PERFORMANCE
+→ move toward advanced question
+
+WEAK TOPIC PERFORMANCE
+→ remain on topic and test fundamentals
+
+The next question should consider:
+
+* candidate's previous answer
+* evaluation
+* current topic
+* previous mistakes
+* candidate level
+* current difficulty
+* role
+* interview type
+* previous questions
+
+Questions should feel like a real interviewer is listening.
+
+---
+
+# 6. INTERVIEW MEMORY
+
+Maintain meaningful context throughout the interview.
+
+Track:
+
+* questions asked
+* candidate answers
+* evaluations
+* strengths
+* weaknesses
+* mistakes
+* missing concepts
+* knowledge gaps
+* topics covered
+* current topic
+* current difficulty
+* important statements made by candidate
+
+Example:
+
+Candidate earlier says:
+
+"I used MongoDB for my project."
+
+Later the interviewer should be able to ask:
+
+"You mentioned earlier that you used MongoDB. Why did you choose it for that project instead of a relational database?"
+
+The interviewer should NOT forget important information.
+
+Do not blindly send unlimited history to the AI.
+
+Use recent conversation + compact interview context/summary where appropriate.
+
+---
+
+# 7. REAL INTERVIEW FLOW
+
+Make the existing interaction behave like:
+
+Question
+↓
+Candidate answer
+↓
+Analyzing response
+↓
+Objective evaluation
+↓
+Specific interviewer reaction
+↓
+Adaptive next question
+
+The reaction must reference the actual answer when appropriate.
+
+Avoid generic filler.
+
+For example:
+
+BAD:
+"Great answer! Let's move to the next question."
+
+GOOD:
+"Your explanation correctly identifies the role of indexing, but you haven't addressed the trade-off during writes. Let's explore that."
+
+The response should feel generated from the candidate's actual answer.
+
+---
+
+# 8. REAL-TIME / VOICE
+
+If voice input already exists and is functional:
+
+Ensure the actual speech transcript is passed into the same answer-evaluation pipeline.
+
+Do not create fake simulated voice responses.
+
+If voice is unstable or not implemented, DO NOT spend the majority of the remaining time rebuilding it.
+
+A reliable text interview with genuine adaptive intelligence is more important.
+
+Preserve existing voice functionality if possible.
+
+---
+
+# 9. MINIMUM INTERVIEW STRUCTURE
+
+Ensure a complete interview can contain:
+
+* at least 8 meaningful questions
+* at least 4 relevant technical/curriculum topics
+
+But do NOT make them feel like eight unrelated static questions.
+
+Use adaptive follow-ups and topic progression.
+
+The interview should gradually change difficulty according to performance.
+
+---
+
+# 10. FINAL AI INTERVIEW REPORT
+
+The final report must be calculated from actual stored evaluations.
+
+Include:
+
+## Overall
+
+* overall score
+
+## Skill evaluation
+
+* technical knowledge
+* communication
+* depth
+* problem solving where applicable
+
+## Strengths
+
+Derived from actual answers.
+
+## Weaknesses
+
+Derived from actual mistakes.
+
+## Knowledge gaps
+
+Repeated or important missing concepts.
+
+## Topic performance
+
+Which topics were strong/weak.
+
+## Difficulty progression
+
+How the candidate performed as questions became harder.
+
+## Personalized recommendations
+
+What the candidate should study/practice next.
+
+## Interview summary
+
+A concise AI-generated summary based on the actual conversation.
+
+## Recommendation
+
+A hiring-style recommendation such as:
+
+* Strong
+* Good
+* Needs Improvement
+* Not Ready
+
+This is an AI assessment, not a definitive hiring decision.
+
+DO NOT hardcode fake scores.
+
+---
+
+# 11. ERROR HANDLING & RELIABILITY
+
+Fix any existing:
+
+* broken API routes
+* inconsistent API responses
+* missing validation
+* unhandled AI failures
+* database errors
+* duplicate submissions
+* race conditions
+* stale interview state
+* frontend/backend mismatches
+
+If AI evaluation fails temporarily:
+
+* do not lose the candidate's answer
+* persist the answer first where appropriate
+* return a recoverable error/state
+
+Do not expose API keys in frontend code.
+
+---
+
+# 12. TEST THE AI LOGIC
+
+Before finishing, test the interview engine using deliberately different answers:
+
+TEST 1:
+Excellent answer.
+
+TEST 2:
+Partially correct answer.
+
+TEST 3:
+Clearly incorrect answer.
+
+TEST 4:
+"I don't know."
+
+TEST 5:
+Irrelevant answer.
+
+TEST 6:
+One-word answer.
+
+The interviewer MUST react differently.
+
+Most importantly:
+
+If the candidate gives a wrong answer, the AI MUST NOT praise it as correct.
+
+If the candidate gives a strong answer, the AI should be able to increase difficulty.
+
+If the candidate gives an incomplete answer, the AI should probe the missing concept.
+
+If the candidate mentions a project/concept earlier, the AI should be capable of using it later.
+
+---
+
+# 13. END-TO-END TEST
+
+Actually verify this flow:
+
+1. Start new interview.
+2. Select role/interview configuration.
+3. Generate first question.
+4. Submit answer.
+5. Save answer to database.
+6. Evaluate answer.
+7. Save evaluation.
+8. Generate adaptive next question.
+9. Continue for 8+ questions.
+10. Cover 4+ relevant topics.
+11. Complete interview.
+12. Generate final report.
+13. Save final report.
+14. Refresh page.
+15. Verify persisted data.
+16. Open interview history.
+17. Verify the completed interview and report are still available.
+
+Fix any errors you encounter.
+
+---
+
+# 14. IMPORTANT IMPLEMENTATION RULES
+
+Do not:
+
+* redesign the UI
+* rewrite the entire project
+* replace working technologies unnecessarily
+* create fake/mock interview results
+* hardcode scores
+* hardcode generic praise
+* create a fake database layer
+* add unnecessary libraries
+* spend time on cosmetic polish while core functionality is incomplete
+
+DO:
+
+* inspect existing code first
+* reuse existing architecture
+* modify only necessary files
+* keep the current UI
+* prioritize database + AI evaluation + adaptive engine
+* test the actual complete flow
+* fix build/runtime errors
+
+---
+
+# 15. FINAL CHECK
+
+Before stopping, confirm internally that:
+
+DATABASE
+✓ persistent
+✓ relational/linked interview data
+✓ answers stored
+✓ evaluations stored
+✓ reports stored
+✓ history survives refresh/login
+
+AI
+✓ objective evaluation
+✓ can identify wrong answers
+✓ can identify incomplete answers
+✓ can identify strong answers
+✓ no automatic fake praise
+✓ adaptive difficulty
+✓ adaptive follow-ups
+✓ conversation memory
+✓ knowledge-gap detection
+
+INTERVIEW
+✓ 8+ meaningful questions
+✓ 4+ topics
+✓ questions depend on previous answers
+✓ complete interview flow works
+
+REPORT
+✓ real scores
+✓ real strengths/weaknesses
+✓ real knowledge gaps
+✓ personalized recommendations
+✓ persisted report
+
+UI
+✓ existing design preserved
+
+If some optional enhancement cannot be safely completed, prioritize the working P0 functionality instead of leaving broken code.
+
+After all changes, run/build the application and fix any errors caused by your implementation.
+
+Finally, give me a short summary of what was actually implemented and any genuine remaining limitation.
